@@ -35,12 +35,51 @@ Service to authenticate users, using PostgreSQL database.
 - github.com/go-chi/chi/v5/middleware
 - github.com/go-chi/cors
 
-**Database Connection:**
+**PostgreSQL Connection:**
 - github.com/jackc/pgconn
 - github.com/jackc/pgx/v4
 - github.com/jackc/pgx/v4/stdlib
 
-## [❌] Logger
+### Request
+`http://localhost:8080/handle`
+
+**Body:**
+```json
+{
+    "action": "auth",
+    "auth": {
+        "email": "admin@example.com",
+        "password": "verysecret"
+    }
+}
+```
+
+## [✔] Logger
+Service to track events, using MongoDB.
+
+### Packages Used
+**Routes:**
+- github.com/go-chi/chi/v5
+- github.com/go-chi/chi/v5/middleware
+- github.com/go-chi/cors
+
+**MongoDB Connection:**
+- go.mongodb.org/mongo-driver/mongo
+- go.mongodb.org/mongo-driver/mongo/options
+
+### Request
+`http://localhost:8080/handle`
+
+**Body:**
+```json
+{
+    "action": "log",
+    "log": {
+        "name": "event",
+        "data": "Some kind of data"
+    }
+}
+```
 
 ## [❌] Mail
 
@@ -48,7 +87,7 @@ Service to authenticate users, using PostgreSQL database.
 
 ## Init Project
 ### Databases
-- Inside `project` folder, run `make init` or create the folder `db-data/postgres`
+- Inside `project` folder, run `make init` or create the folder `db-data/postgres` and `db-data/mongo`.
 
 - Run `make up-build` to start the microservices (requires Docker). Run `make down` if want stop the microservices.
 
@@ -103,4 +142,9 @@ Service to authenticate users, using PostgreSQL database.
     (E'admin@example.com',E'Admin',E'User',E'$2a$12$1zGLuYDDNvATh4RA4avbKuheAMpb1svexSzrQm7up.bnpwQHs0jNe',1,E'2022-03-14 00:00:00',E'2022-03-14 00:00:00');
     ```
 
-- Run `make start` to start front-end. Access on `http://localhost/`. Run `make stop` if want stop the front-end
+- Run `make start` to start front-end. Access on `http://localhost/`. Run `make stop` if want stop the front-end.
+
+- Can check logs in the MongoDB. URI to connect: 
+    ```
+    mongodb://admin:password@localhost:27017/logs?authSource=admin&readPreference=primary&directConnection=true&ssl=false
+    ```

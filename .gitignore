@@ -1,7 +1,8 @@
 # binaries
-/broker-service/brokerApp
 /front-end/frontApp
+/broker-service/brokerApp
 /authentication-service/authApp
+/logger-service/loggerServiceApp
 
 # database folders
-/db-data/postgres
+project/db-data
