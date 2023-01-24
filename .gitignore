@@ -3,6 +3,7 @@
 /broker-service/brokerApp
 /authentication-service/authApp
 /logger-service/loggerServiceApp
+/mailer-service/mailerApp
 
 # database folders
 project/db-data

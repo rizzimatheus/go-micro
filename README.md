@@ -4,18 +4,18 @@
 
 ### Services
 
-- **Broker** -  optional single point of entry to microservices
-- **Authentication** - PostgreSQL
-- **Logger** - MongoDB
-- **Mail** - sends emails with a specific template
-- **Listener** - consumes messages in RabbitMQ and initiates a process
+- **Broker** -  optional single point of entry to microservices.
+- **Authentication** - user authentication using PostgreSQL.
+- **Logger** - event registration using MongoDB.
+- **Mail** - sends emails with a specific template.
+- **Listener** - consumes messages in RabbitMQ and initiates a process.
 
 ### Communication
 
-- REST API with JSON as transport
-- Sending and Receiving using RPC
-- Sending and Receiving using RPC
-- Initiating and Responding to events using Advanced Message Queuing Protocol (AMQP)
+- REST API with JSON as transport.
+- Sending and Receiving using RPC.
+- Sending and Receiving using RPC.
+- Initiating and Responding to events using Advanced Message Queuing Protocol (AMQP).
 
 ## [📌] Broker
 Single point of entry to microservices.
@@ -27,7 +27,7 @@ Single point of entry to microservices.
 - github.com/go-chi/cors
 
 ## [✔] Authentication
-Service to authenticate users, using PostgreSQL database.
+Service to authenticate users using PostgreSQL database.
 
 ### Packages Used
 **Routes:**
@@ -55,7 +55,7 @@ Service to authenticate users, using PostgreSQL database.
 ```
 
 ## [✔] Logger
-Service to track events, using MongoDB.
+Service for event registration using MongoDB.
 
 ### Packages Used
 **Routes:**
@@ -81,7 +81,35 @@ Service to track events, using MongoDB.
 }
 ```
 
-## [❌] Mail
+## [✔] Mail
+Service to send emails with a specific template.
+Broker accepts commands to send mail just for testing purpose. In production this should rejected.
+
+### Packages Used
+**Routes:**
+- github.com/go-chi/chi/v5
+- github.com/go-chi/chi/v5/middleware
+- github.com/go-chi/cors
+
+**Mail**
+- github.com/vanng822/go-premailer/premailer
+- github.com/xhit/go-simple-mail/v2
+
+### Request
+`http://localhost:8080/handle`
+
+**Body:**
+```json
+{
+    "action": "mail",
+    "mail": {
+        "from": "me@example.com",
+        "to": "you@there.com",
+        "subject": "Test email",
+        "message": "Hello world!"
+    }
+}
+```
 
 ## [❌] Listener
 
