@@ -3,12 +3,14 @@ BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 LOGGER_BINARY=loggerServiceApp
 MAIL_BINARY=mailerApp
+LISTENER_BINARY=listenerApp
 
 ## init: create some folders to the databases
 init:
 	@echo "Creating some folders to init the project..."
 	mkdir -p db-data/postgres
 	mkdir db-data/mongo
+	mkdir db-data/rabbitmq
 	@echo "Folders created! Need to initialize the Databases. Check README!"
 
 ## up: starts all containers in the background without forcing build
@@ -18,7 +20,7 @@ up:
 	@echo "Docker images started!"
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_broker build_auth build_logger build_mail
+up_build: build_broker build_auth build_logger build_mail build_listener
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -41,6 +43,12 @@ build_logger:
 build_mail:
 	@echo "Building mail binary..."
 	cd ../mailer-service && env GOOS=linux CGO_ENABLED=0 go build -o ${MAIL_BINARY} ./cmd/api
+	@echo "Done!"
+
+## build_listener: builds the listener binary as a linux executable
+build_listener:
+	@echo "Building listener binary..."
+	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_BINARY} .
 	@echo "Done!"
 
 ## down: stop docker compose

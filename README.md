@@ -26,6 +26,9 @@ Single point of entry to microservices.
 - github.com/go-chi/chi/v5/middleware
 - github.com/go-chi/cors
 
+**RabbitMQ**
+- github.com/rabbitmq/amqp091-go
+
 ## [✔] Authentication
 Service to authenticate users using PostgreSQL database.
 
@@ -112,10 +115,15 @@ Broker accepts commands to send mail just for testing purpose. In production thi
 ```
 
 ## [❌] Listener
+Service to consumes messages in RabbitMQ and initiates a process.
+
+### Packages Used
+**RabbitMQ**
+- github.com/rabbitmq/amqp091-go
 
 ## Init Project
 ### Databases
-- Inside `project` folder, run `make init` or create the folder `db-data/postgres` and `db-data/mongo`.
+- Inside `project` folder, run `make init` or create the folder `db-data/postgres`, `db-data/mongo` and `db-data/rabbitmq`.
 
 - Run `make up-build` to start the microservices (requires Docker). Run `make down` if want stop the microservices.
 

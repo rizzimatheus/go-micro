@@ -4,6 +4,7 @@
 /authentication-service/authApp
 /logger-service/loggerServiceApp
 /mailer-service/mailerApp
+/listener-service/listenerApp
 
 # database folders
 project/db-data
