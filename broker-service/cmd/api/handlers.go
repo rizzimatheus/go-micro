@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/rpc"
 )
 
 type RequestPayload struct {
@@ -16,6 +17,7 @@ type RequestPayload struct {
 }
 
 type MailPayload struct {
+	Name    string `json:"name"`
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Subject string `json:"subject"`
@@ -23,6 +25,7 @@ type MailPayload struct {
 }
 
 type AuthPayload struct {
+	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -30,6 +33,11 @@ type AuthPayload struct {
 type LogPayload struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
+}
+
+type RabbitPayload struct {
+	Severity string
+	Data     any
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -53,13 +61,24 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch requestPayload.Action {
-	case "auth":
+	case "auth-JSON":
 		app.authenticate(w, requestPayload.Auth)
-	case "log":
-		// app.logItem(w, requestPayload.Log)
-		app.logEventViaRabbit(w, requestPayload.Log)
-	case "mail":
+	case "auth-Rabbit":
+		app.rabbitRequest(w, requestPayload.Auth, "auth.CHECK", "Authenticated via RabbitMQ")
+	case "auth-RPC":
+		app.rpcRequest(w, "authentication-service:5001", "RPCServer.AuthenticateViaRPC", requestPayload.Auth)
+	case "log-JSON":
+		app.logItem(w, requestPayload.Log)
+	case "log-Rabbit":
+		app.rabbitRequest(w, requestPayload.Log, "log.INFO", "Logged via RabbitMQ")
+	case "log-RPC":
+		app.rpcRequest(w, "logger-service:5001", "RPCServer.LogInfo", requestPayload.Log)
+	case "mail-JSON":
 		app.sendMail(w, requestPayload.Mail)
+	case "mail-Rabbit":
+		app.rabbitRequest(w, requestPayload.Mail, "mail.SEND", "Mail sent via RabbitMQ")
+	case "mail-RPC":
+		app.rpcRequest(w, "mailer-service:5001", "RPCServer.SendMailViaRPC", requestPayload.Mail)
 	default:
 		app.errorJSON(w, errors.New("unknown action"))
 	}
@@ -95,7 +114,7 @@ func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "logged"
+	payload.Message = "Logged via JSON"
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
@@ -146,7 +165,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "Authenticated!"
+	payload.Message = "Authenticated via JSON"
 	payload.Data = jsonFromService.Data
 
 	app.writeJSON(w, http.StatusAccepted, payload)
@@ -167,7 +186,6 @@ func (app *Config) sendMail(w http.ResponseWriter, msg MailPayload) {
 
 	request.Header.Set("Content-Type", "application/json")
 
-
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
@@ -185,14 +203,19 @@ func (app *Config) sendMail(w http.ResponseWriter, msg MailPayload) {
 	// send back json
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "Message sent to " + msg.To
+	payload.Message = "Message sent via JSON to " + msg.To
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
 
-// logEventViaRabbit logs an event using the logger-service. It makes the call by pushing the data to RabbitMQ.
-func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
-	err := app.pushToQueue(l.Name, l.Data)
+// rabbitRequest pushes the data to RabbitMQ.
+func (app *Config) rabbitRequest(w http.ResponseWriter, rabbitPayload any, severity, msg string) {
+	rpaylod := RabbitPayload{
+		Severity: severity,
+		Data:     rabbitPayload,
+	}
+
+	err := app.pushToQueue(rpaylod)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
@@ -200,27 +223,43 @@ func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
 
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "logged via RabbitMQ"
+	payload.Message = msg
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
 
 // pushToQueue pushes a message into RabbitMQ
-func (app *Config) pushToQueue(name, msg string) error {
+func (app *Config) pushToQueue(payload RabbitPayload) error {
 	emitter, err := event.NewEventEmitter(app.Rabbit)
 	if err != nil {
 		return err
 	}
 
-	payload := LogPayload{
-		Name: name,
-		Data: msg,
-	}
-
 	j, _ := json.MarshalIndent(&payload, "", "\t")
-	err = emitter.Push(string(j), "log.INFO")
+	err = emitter.Push(string(j), payload.Severity)
 	if err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (app *Config) rpcRequest(w http.ResponseWriter, addr string, serviceMethod string, rpcPayload any) {
+	client, err := rpc.Dial("tcp", addr)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var result []byte
+	err = client.Call(serviceMethod, rpcPayload, &result)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	_ = json.Unmarshal(result, &payload)
+
+	app.writeJSON(w, http.StatusAccepted, payload)
 }

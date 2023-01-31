@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 	"os"
 	"time"
 
@@ -14,7 +16,12 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-const webPort = "80"
+const (
+	webPort = "80"
+	rpcPort = "5001"
+)
+
+var app Config
 
 type Config struct {
 	DB     *sql.DB
@@ -22,8 +29,6 @@ type Config struct {
 }
 
 func main() {
-	log.Println("Starting authentication service")
-
 	// connect to DB
 	conn := connectToDB()
 	if conn == nil {
@@ -31,19 +36,45 @@ func main() {
 	}
 
 	// set up config
-	app := Config{
+	app = Config{
 		DB:     conn,
 		Models: data.New(conn),
 	}
 
+	// Register the RPC Server
+	err := rpc.Register(new(RPCServer))
+	if err != nil {
+		log.Panic(err)
+	}
+	go app.rpcListen()
+
+	// start web server
+	log.Println("Starting authentication service on port", webPort)
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", webPort),
 		Handler: app.routes(),
 	}
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Panic(err)
+	}
+}
+
+func (app *Config) rpcListen() error {
+	log.Println("Starting RPC server on port ", rpcPort)
+	listen, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", rpcPort))
+	if err != nil {
+		return err
+	}
+	defer listen.Close()
+
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
 	}
 }
 

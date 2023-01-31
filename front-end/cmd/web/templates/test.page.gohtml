@@ -4,12 +4,21 @@
     <div class="container">
         <div class="row">
             <div class="col">
-                <h1 class="mt-5">Test microservices</h1>
+                <h1 class="mt-5">Test Microservices</h1>
                 <hr>
-                <a id="brokerBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Test Broker</a>
-                <a id="authBrokerBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Test Auth</a>
-                <a id="logBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Test Log</a>
-                <a id="mailBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Test Mail</a>
+                <a id="brokerBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Broker</a>
+
+                <a id="authJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth JSON</a>
+                <a id="authRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth Rabbit</a>
+                <a id="authRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth RPC</a>
+
+                <a id="logJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log JSON</a>
+                <a id="logRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log Rabbit</a>
+                <a id="logRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log RPC</a>
+
+                <a id="mailJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail JSON</a>
+                <a id="mailRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail Rabbit</a>
+                <a id="mailRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail RPC</a>
 
                 <div id="output" class="mt-5" style="outline: 1px solid silver; padding: 2em;">
                     <span class="text-muted">Output shows here...</span>
@@ -36,77 +45,27 @@
 {{define "js"}}
     <script>
     let brokerBtn = document.getElementById("brokerBtn");
-    let authBrokerBtn = document.getElementById("authBrokerBtn");
-    let logBtn = document.getElementById("logBtn");
-    let mailBtn = document.getElementById("mailBtn");
+
+    let authJSONBtn = document.getElementById("authJSONBtn");
+    let authRabbitBtn = document.getElementById("authRabbitBtn");
+    let authRPCBtn = document.getElementById("authRPCBtn");
+
+    let logJSONBtn = document.getElementById("logJSONBtn");
+    let logRabbitBtn = document.getElementById("logRabbitBtn");
+    let logRPCBtn = document.getElementById("logRPCBtn");
+
+    let mailJSONBtn = document.getElementById("mailJSONBtn");
+    let mailRabbitBtn = document.getElementById("mailRabbitBtn");
+    let mailRPCBtn = document.getElementById("mailRPCBtn");
+
     let output = document.getElementById("output");
     let sent = document.getElementById("payload");
     let recevied = document.getElementById("received");
 
-    brokerBtn.addEventListener("click", function() {
-        const body = {
-            method: 'POST',
-        }
+    const brokerURL = "http:\/\/localhost:8080"
+    const handleURL = "http:\/\/localhost:8080/handle"
 
-        fetch("http:\/\/localhost:8080", body)
-        .then((response) => response.json())
-        .then((data) => {
-            sent.innerHTML ="empty post request";
-            received.innerHTML = JSON.stringify(data, undefined, 4);
-            if (data.error) {
-                console.log(data.message);
-            } else {
-                output.innerHTML += `<br><strong>Response from broker service</strong>: ${data.message}`;
-            }
-        })
-        .catch((error) => {
-            output.innerHTML += "<br><br>Eror: " + error;
-        })
-    })
-
-    authBrokerBtn.addEventListener("click", function() {
-        const payload = {
-            action: "auth",
-            auth: {
-                email: "admin@example.com",
-                password: "verysecret",
-            }
-        }
-
-        const headers = new Headers();
-        headers.append("Content-Type", "application/json");
-
-        const body = {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: headers,
-        }
-
-        fetch("http:\/\/localhost:8080/handle", body)
-        .then((response) => response.json())
-        .then((data) => {
-            sent.innerHTML = JSON.stringify(payload, undefined, 4);
-            received.innerHTML = JSON.stringify(data, undefined, 4);
-            if (data.error) {
-                output.innerHTML += `<br><strong>Error:</strong> ${data.message}`;
-            } else {
-                output.innerHTML += `<br><strong>Response from broker service</strong>: ${data.message}`;
-            }
-        })
-        .catch((error) => {
-            output.innerHTML += "<br><br>Eror: " + error;
-        })
-    })
-
-    logBtn.addEventListener("click", function() {
-        const payload = {
-            action: "log",
-            log: {
-                name: "event",
-                data: "Some kind of data",
-            }
-        }
-
+    function makeRequest(url, payload) {
         const headers = new Headers();
         headers.append("Content-Type", "application/json");
 
@@ -116,7 +75,7 @@
             headers: headers,
         }
 
-        fetch("http:\/\/localhost:8080/handle", body)
+        fetch(url, body)
         .then((response) => response.json())
         .then((data) => {
             sent.innerHTML = JSON.stringify(payload, undefined, 4);
@@ -129,44 +88,132 @@
         })
         .catch((error) => {
             output.innerHTML += "<br><br>Eror: " + error;
-        })        
+        })
+    }
+
+    brokerBtn.addEventListener("click", function(){ makeRequest(brokerURL, {}) })
+
+    authJSONBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "auth-JSON",
+                auth: {
+                    email: "admin@example.com",
+                    password: "verysecret",
+                }
+            }
+        )
     })
 
-    mailBtn.addEventListener("click", function() {
-
-        const payload = {
-            action: "mail",
-            mail: {
-                from: "me@example.com",
-                to: "you@there.com",
-                subject: "Test email",
-                message: "Hello world!",
+    authRabbitBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "auth-Rabbit",
+                auth: {
+                    email: "admin@example.com",
+                    password: "verysecret",
+                }
             }
-        }
+        )
+    })
 
-        const headers = new Headers();
-        headers.append("Content-Type", "application/json");
-
-        const body = {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: headers,
-        }
-
-        fetch("http:\/\/localhost:8080/handle", body)
-        .then((response) => response.json())
-        .then((data) => {
-            sent.innerHTML = JSON.stringify(payload, undefined, 4);
-            received.innerHTML = JSON.stringify(data, undefined, 4);
-            if (data.error) {
-                output.innerHTML += `<br><strong>Error:</strong> ${data.message}`;
-            } else {
-                output.innerHTML += `<br><strong>Response from broker service</strong>: ${data.message}`;
+    authRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "auth-RPC",
+                auth: {
+                    email: "admin@example.com",
+                    password: "verysecret",
+                }
             }
-        })
-        .catch((error) => {
-            output.innerHTML += "<br><br>Eror: " + error;
-        })
+        )
+    })
+
+    logJSONBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "log-JSON",
+                log: {
+                    name: "event",
+                    data: "Some kind of data, logged via JSON",
+                }
+            }
+        )
+    })
+
+    logRabbitBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "log-Rabbit",
+                log: {
+                    name: "event",
+                    data: "Some kind of data, logged via Rabbit",
+                }
+            }
+        )
+    })
+
+    logRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "log-RPC",
+                log: {
+                    name: "event",
+                    data: "Some kind of data, logged via RPC",
+                }
+            }
+        )
+    })
+
+    mailJSONBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "mail-JSON",
+                mail: {
+                    from: "me@example.com",
+                    to: "you@there.com",
+                    subject: "Test JSON email",
+                    message: "Hello world!",
+                }
+            }
+        )
+    })
+
+    mailRabbitBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "mail-Rabbit",
+                mail: {
+                    from: "me@example.com",
+                    to: "you@there.com",
+                    subject: "Test Rabbit email",
+                    message: "Hello world!",
+                }
+            }
+        )
+    })
+
+    mailRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "mail-RPC",
+                mail: {
+                    from: "me@example.com",
+                    to: "you@there.com",
+                    subject: "Test RPC email",
+                    message: "Hello world!",
+                }
+            }
+        )
     })
         
     </script>

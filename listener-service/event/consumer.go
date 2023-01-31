@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Consumer struct {
-	conn *amqp.Connection
+	conn      *amqp.Connection
 	queueName string
 }
 
@@ -37,7 +38,24 @@ func (consumer *Consumer) setup() error {
 	return declareExchange(channel)
 }
 
-type Payload struct {
+type RabbitPayload struct {
+	Severity string `json:"severity"`
+	Data     any    `json:"data"`
+}
+
+type MailPayload struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
+}
+
+type AuthPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LogPayload struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
 }
@@ -58,7 +76,7 @@ func (consumer *Consumer) Listen(topics []string) error {
 		ch.QueueBind(
 			q.Name,
 			s,
-			"logs_topic",
+			"go-micro.events.tx",
 			false,
 			nil,
 		)
@@ -76,32 +94,45 @@ func (consumer *Consumer) Listen(topics []string) error {
 	forever := make(chan bool)
 	go func() {
 		for d := range messages {
-			var payload Payload
+			var payload RabbitPayload
 			_ = json.Unmarshal(d.Body, &payload)
 
 			go handlePayload(payload)
 		}
 	}()
 
-	fmt.Printf("Waiting for message [Exchange, Queue] [logs_topic, %s]\n", q.Name)
+	fmt.Printf("Waiting for message [Exchange, Queue] [go-micro.events.tx, %s]\n", q.Name)
 	<-forever
 
 	return nil
 }
 
-func handlePayload(payload Payload) {
-	switch payload.Name {
-	case "log", "event":
-		// log whatever we get
+func handlePayload(payload RabbitPayload) {
+	var logPat = regexp.MustCompile(`^[(log)(event)].*`)
+	var authPat = regexp.MustCompile(`^auth.*`)
+	var mailPat = regexp.MustCompile(`^mail.*`)
+
+	switch severity := payload.Severity; {
+	case logPat.MatchString(severity):
+		// log
 		err := logEvent(payload)
 		if err != nil {
 			log.Println(err)
 		}
 
-	case "auth":
+	case authPat.MatchString(severity):
 		// authenticate
+		err := authenticateUser(payload)
+		if err != nil {
+			log.Println(err)
+		}
 
-	// you can have as many cases as you want, as long as you write the logic
+	case mailPat.MatchString(severity):
+		// send mail
+		err := sendMail(payload)
+		if err != nil {
+			log.Println(err)
+		}
 
 	default:
 		err := logEvent(payload)
@@ -111,8 +142,8 @@ func handlePayload(payload Payload) {
 	}
 }
 
-func logEvent(entry Payload) error {
-	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+func logEvent(entry RabbitPayload) error {
+	jsonData, _ := json.MarshalIndent(entry.Data, "", "\t")
 
 	logServiceURL := "http://logger-service/log"
 
@@ -134,6 +165,62 @@ func logEvent(entry Payload) error {
 	if response.StatusCode != http.StatusAccepted {
 		return err
 	}
-	
+
+	return nil
+}
+
+func authenticateUser(entry RabbitPayload) error {
+	// create some json we'll send to the auth microservice
+	jsonData, _ := json.MarshalIndent(entry.Data, "", "\t")
+
+	// call the service
+	request, err := http.NewRequest("POST", "http://authentication-service/authenticate", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	// make sure we get back the correct status code
+	if response.StatusCode == http.StatusUnauthorized {
+		return err
+	} else if response.StatusCode != http.StatusAccepted {
+		return err
+	}
+
+	return nil
+}
+
+func sendMail(entry RabbitPayload) error {
+	jsonData, _ := json.MarshalIndent(entry.Data, "", "\t")
+
+	// call the mail service
+	mailServiceURL := "http://mailer-service/send"
+
+	// post to mail service
+	request, err := http.NewRequest("POST", mailServiceURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	// make sure we get back the right status code
+	if response.StatusCode != http.StatusAccepted {
+		return err
+	}
+
 	return nil
 }

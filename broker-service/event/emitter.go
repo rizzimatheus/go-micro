@@ -16,7 +16,7 @@ func (e *Emitter) setup() error {
 		return err
 	}
 	defer channel.Close()
-	
+
 	return declareExchange(channel)
 }
 
@@ -30,13 +30,13 @@ func (e *Emitter) Push(event string, severity string) error {
 	log.Println("Pushing to channel")
 
 	err = channel.Publish(
-		"logs_topic",
+		"go-micro.events.tx",
 		severity,
 		false,
 		false,
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body: []byte(event),
+			Body:        []byte(event),
 		},
 	)
 	if err != nil {

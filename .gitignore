@@ -8,3 +8,6 @@
 
 # database folders
 project/db-data
+
+# others
+go-micro.code-workspace
