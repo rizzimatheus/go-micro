@@ -6,19 +6,22 @@
             <div class="col">
                 <h1 class="mt-5">Test Microservices</h1>
                 <hr>
-                <a id="brokerBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Broker</a>
-
-                <a id="authJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth JSON</a>
-                <a id="authRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth Rabbit</a>
-                <a id="authRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Auth RPC</a>
-
-                <a id="logJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log JSON</a>
-                <a id="logRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log Rabbit</a>
-                <a id="logRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Log RPC</a>
-
-                <a id="mailJSONBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail JSON</a>
-                <a id="mailRabbitBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail Rabbit</a>
-                <a id="mailRPCBtn" class="btn btn-outline-secondary" href="javascript:void(0);">Mail RPC</a>
+                <a id="brokerBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Broker</a>
+                <br>
+                <a id="authJSONBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Auth JSON</a>
+                <a id="authRabbitBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Auth Rabbit</a>
+                <a id="authRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Auth RPC</a>
+                <a id="authGRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Auth gRPC</a>
+                <br>
+                <a id="logJSONBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Log JSON</a>
+                <a id="logRabbitBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Log Rabbit</a>
+                <a id="logRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Log RPC</a>
+                <a id="logGRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Log gRPC</a>
+                <br>
+                <a id="mailJSONBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Mail JSON</a>
+                <a id="mailRabbitBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Mail Rabbit</a>
+                <a id="mailRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Mail RPC</a>
+                <a id="mailGRPCBtn" class="btn btn-outline-secondary mb-2" style="width: 150px" href="javascript:void(0);">Mail gRPC</a>
 
                 <div id="output" class="mt-5" style="outline: 1px solid silver; padding: 2em;">
                     <span class="text-muted">Output shows here...</span>
@@ -49,14 +52,17 @@
     let authJSONBtn = document.getElementById("authJSONBtn");
     let authRabbitBtn = document.getElementById("authRabbitBtn");
     let authRPCBtn = document.getElementById("authRPCBtn");
+    let authGRPCBtn = document.getElementById("authGRPCBtn");
 
     let logJSONBtn = document.getElementById("logJSONBtn");
     let logRabbitBtn = document.getElementById("logRabbitBtn");
     let logRPCBtn = document.getElementById("logRPCBtn");
+    let logGRPCBtn = document.getElementById("logGRPCBtn");
 
     let mailJSONBtn = document.getElementById("mailJSONBtn");
     let mailRabbitBtn = document.getElementById("mailRabbitBtn");
     let mailRPCBtn = document.getElementById("mailRPCBtn");
+    let mailGRPCBtn = document.getElementById("mailGRPCBtn");
 
     let output = document.getElementById("output");
     let sent = document.getElementById("payload");
@@ -87,7 +93,7 @@
             }
         })
         .catch((error) => {
-            output.innerHTML += "<br><br>Eror: " + error;
+            output.innerHTML += "<br><br>Error: " + error;
         })
     }
 
@@ -97,7 +103,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "auth-JSON",
+                action: "auth-json",
                 auth: {
                     email: "admin@example.com",
                     password: "verysecret",
@@ -110,7 +116,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "auth-Rabbit",
+                action: "auth-rabbit",
                 auth: {
                     email: "admin@example.com",
                     password: "verysecret",
@@ -123,7 +129,20 @@
         makeRequest(
             handleURL, 
             {
-                action: "auth-RPC",
+                action: "auth-rpc",
+                auth: {
+                    email: "admin@example.com",
+                    password: "verysecret",
+                }
+            }
+        )
+    })
+
+    authGRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "auth-grpc",
                 auth: {
                     email: "admin@example.com",
                     password: "verysecret",
@@ -136,7 +155,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "log-JSON",
+                action: "log-json",
                 log: {
                     name: "event",
                     data: "Some kind of data, logged via JSON",
@@ -149,7 +168,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "log-Rabbit",
+                action: "log-rabbit",
                 log: {
                     name: "event",
                     data: "Some kind of data, logged via Rabbit",
@@ -162,10 +181,23 @@
         makeRequest(
             handleURL, 
             {
-                action: "log-RPC",
+                action: "log-rpc",
                 log: {
                     name: "event",
                     data: "Some kind of data, logged via RPC",
+                }
+            }
+        )
+    })
+
+    logGRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "log-grpc",
+                log: {
+                    name: "event",
+                    data: "Some kind of data, logged via gRPC",
                 }
             }
         )
@@ -175,7 +207,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "mail-JSON",
+                action: "mail-json",
                 mail: {
                     from: "me@example.com",
                     to: "you@there.com",
@@ -190,7 +222,7 @@
         makeRequest(
             handleURL, 
             {
-                action: "mail-Rabbit",
+                action: "mail-rabbit",
                 mail: {
                     from: "me@example.com",
                     to: "you@there.com",
@@ -205,11 +237,26 @@
         makeRequest(
             handleURL, 
             {
-                action: "mail-RPC",
+                action: "mail-rpc",
                 mail: {
                     from: "me@example.com",
                     to: "you@there.com",
                     subject: "Test RPC email",
+                    message: "Hello world!",
+                }
+            }
+        )
+    })
+
+    mailGRPCBtn.addEventListener("click", function(){
+        makeRequest(
+            handleURL, 
+            {
+                action: "mail-grpc",
+                mail: {
+                    from: "me@example.com",
+                    to: "you@there.com",
+                    subject: "Test gRPC email",
                     message: "Hello world!",
                 }
             }

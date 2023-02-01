@@ -6,7 +6,6 @@ import (
 
 func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 	type mailMessage struct {
-		Name    string `json:"name"`
 		From    string `json:"from"`
 		To      string `json:"to"`
 		Subject string `json:"subject"`

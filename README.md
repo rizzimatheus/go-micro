@@ -14,10 +14,11 @@
 
 - REST API with JSON as transport.
 - Sending and Receiving using RPC.
-- Sending and Receiving using RPC.
+- Sending and Receiving using gRPC.
+    - Protocol Buffer Compiler: [instalation](https://grpc.io/docs/protoc-installation/) and [quick start](https://grpc.io/docs/languages/go/quickstart/).
 - Initiating and Responding to events using Advanced Message Queuing Protocol (AMQP).
 
-## [📌] Broker
+## [✔] Broker
 Single point of entry to microservices.
 
 ### Packages Used
@@ -28,6 +29,10 @@ Single point of entry to microservices.
 
 **RabbitMQ**
 - github.com/rabbitmq/amqp091-go
+
+**gRPC**
+- google.golang.org/grpc
+- google.golang.org/protobuf
 
 ## [✔] Authentication
 Service to authenticate users using PostgreSQL database.
@@ -43,13 +48,18 @@ Service to authenticate users using PostgreSQL database.
 - github.com/jackc/pgx/v4
 - github.com/jackc/pgx/v4/stdlib
 
+**gRPC**
+- google.golang.org/grpc
+- google.golang.org/protobuf
+
 ### Request
 `http://localhost:8080/handle`
 
 **Body:**
+Actions: `auth-json`, `auth-rabbit`, `auth-rpc`, `auth-grpc`
 ```json
 {
-    "action": "auth",
+    "action": "auth-json",
     "auth": {
         "email": "admin@example.com",
         "password": "verysecret"
@@ -70,13 +80,18 @@ Service for event registration using MongoDB.
 - go.mongodb.org/mongo-driver/mongo
 - go.mongodb.org/mongo-driver/mongo/options
 
+**gRPC**
+- google.golang.org/grpc
+- google.golang.org/protobuf
+
 ### Request
 `http://localhost:8080/handle`
 
 **Body:**
+Actions: `log-json`, `log-rabbit`, `log-rpc`, `log-grpc`
 ```json
 {
-    "action": "log",
+    "action": "log-json",
     "log": {
         "name": "event",
         "data": "Some kind of data"
@@ -98,13 +113,18 @@ Broker accepts commands to send mail just for testing purpose. In production thi
 - github.com/vanng822/go-premailer/premailer
 - github.com/xhit/go-simple-mail/v2
 
+**gRPC**
+- google.golang.org/grpc
+- google.golang.org/protobuf
+
 ### Request
 `http://localhost:8080/handle`
 
 **Body:**
+Actions: `mail-json`, `mail-rabbit`, `mail-rpc`, `mail-grpc`
 ```json
 {
-    "action": "mail",
+    "action": "mail-json",
     "mail": {
         "from": "me@example.com",
         "to": "you@there.com",
@@ -114,7 +134,7 @@ Broker accepts commands to send mail just for testing purpose. In production thi
 }
 ```
 
-## [❌] Listener
+## [✔] Listener
 Service to consumes messages in RabbitMQ and initiates a process.
 
 ### Packages Used

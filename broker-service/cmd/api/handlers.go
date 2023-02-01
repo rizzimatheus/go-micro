@@ -1,12 +1,20 @@
 package main
 
 import (
+	"broker-service/auths"
 	"broker-service/event"
+	"broker-service/logs"
+	"broker-service/mails"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/rpc"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type RequestPayload struct {
@@ -61,24 +69,30 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch requestPayload.Action {
-	case "auth-JSON":
+	case "auth-json":
 		app.authenticate(w, requestPayload.Auth)
-	case "auth-Rabbit":
+	case "auth-rabbit":
 		app.rabbitRequest(w, requestPayload.Auth, "auth.CHECK", "Authenticated via RabbitMQ")
-	case "auth-RPC":
+	case "auth-rpc":
 		app.rpcRequest(w, "authentication-service:5001", "RPCServer.AuthenticateViaRPC", requestPayload.Auth)
-	case "log-JSON":
+	case "auth-grpc":
+		app.authenticateViaGRPC(w, requestPayload.Auth)
+	case "log-json":
 		app.logItem(w, requestPayload.Log)
-	case "log-Rabbit":
+	case "log-rabbit":
 		app.rabbitRequest(w, requestPayload.Log, "log.INFO", "Logged via RabbitMQ")
-	case "log-RPC":
+	case "log-rpc":
 		app.rpcRequest(w, "logger-service:5001", "RPCServer.LogInfo", requestPayload.Log)
-	case "mail-JSON":
+	case "log-grpc":
+		app.logViaGRPC(w, requestPayload.Log)
+	case "mail-json":
 		app.sendMail(w, requestPayload.Mail)
-	case "mail-Rabbit":
+	case "mail-rabbit":
 		app.rabbitRequest(w, requestPayload.Mail, "mail.SEND", "Mail sent via RabbitMQ")
-	case "mail-RPC":
+	case "mail-rpc":
 		app.rpcRequest(w, "mailer-service:5001", "RPCServer.SendMailViaRPC", requestPayload.Mail)
+	case "mail-grpc":
+		app.sendMailViaGRPC(w, requestPayload.Mail)
 	default:
 		app.errorJSON(w, errors.New("unknown action"))
 	}
@@ -260,6 +274,99 @@ func (app *Config) rpcRequest(w http.ResponseWriter, addr string, serviceMethod 
 
 	var payload jsonResponse
 	_ = json.Unmarshal(result, &payload)
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) logViaGRPC(w http.ResponseWriter, requestPayload LogPayload) {
+	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := logs.NewLogServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = c.WriteLog(ctx, &logs.LogRequest{
+		LogEntry: &logs.Log{
+			Name: requestPayload.Name,
+			Data: requestPayload.Data,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Logged via gRPC"
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) sendMailViaGRPC(w http.ResponseWriter, requestPayload MailPayload) {
+	conn, err := grpc.Dial("mailer-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := mails.NewMailServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = c.SendMail(ctx, &mails.MailRequest{
+		MailEntry: &mails.Mail{
+			From:    requestPayload.From,
+			To:      requestPayload.To,
+			Subject: requestPayload.Subject,
+			Message: requestPayload.Message,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Mail sent via gRPC"
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) authenticateViaGRPC(w http.ResponseWriter, requestPayload AuthPayload) {
+	conn, err := grpc.Dial("authentication-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := auths.NewAuthServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = c.Authenticate(ctx, &auths.AuthRequest{
+		AuthEntry: &auths.Auth{
+			Name:    requestPayload.Name,
+			Email:      requestPayload.Email,
+			Password: requestPayload.Password,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Authenticated via gRPC"
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }

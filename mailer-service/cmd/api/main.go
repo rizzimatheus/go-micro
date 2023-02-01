@@ -17,6 +17,7 @@ type Config struct {
 const (
 	webPort = "80"
 	rpcPort = "5001"
+	gRpcPort = "50001"
 )
 
 var app Config
@@ -32,6 +33,8 @@ func main() {
 		log.Panic(err)
 	}
 	go app.rpcListen()
+
+	go app.gRPCListen()
 
 	// start web server
 	log.Println("Starting mail service on port", webPort)

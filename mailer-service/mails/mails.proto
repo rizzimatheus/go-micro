@@ -1,0 +1,28 @@
+// PATH="$PATH:$(go env GOPATH)/bin"
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative mails.proto
+
+syntax = "proto3";
+
+package mails;
+
+option go_package = "/mails";
+
+message Mail {
+    string name = 1;
+    string from = 2;
+    string to = 3;
+    string subject = 4;
+    string message = 5;
+}
+
+message MailRequest {
+    Mail mailEntry = 1;
+}
+
+message MailResponse {
+    string result = 1;
+}
+
+service MailService {
+    rpc SendMail(MailRequest) returns (MailResponse);
+}
